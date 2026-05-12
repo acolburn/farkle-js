@@ -4,8 +4,6 @@ import Scoreboard from "./Scoreboard";
 import Die from "./Die";
 import Rollboard from "./Rollboard";
 
-//TODO: Farkle should end turn
-
 function App() {
   const [dice, setDice] = useState(
     Array.from({ length: 6 }, (_, id) => ({
@@ -23,7 +21,7 @@ function App() {
     { name: "player4", score: 0 },
   ]);
 
-  function resetDice() {
+  function endTurn() {
     let score = 0;
     if (!dice || dice.length === 0) return;
 
@@ -36,15 +34,24 @@ function App() {
       // Unlikely event player selected dice that don't score...
       if (checkForFarkle(_dice)) {
         alert("Farkle! No points scored this turn.");
+        resetDice(0);
+        return;
       } else {
         score = calculateScore(_dice);
-        console.log("Last roll, when you clicked End Turn:", score);
+        console.log("Value of selected dice when you clicked End Turn:", score);
       }
     }
-    // const totalTurnScore = turnScore.reduce((total, s) => total + s, 0) + score;
+    resetDice(score);
+  }
+
+  // resets dice to initial state, adds turn score to player 1's total score, resets turn score to 0
+  function resetDice(score) {
     // sometimes score values are NaN
+    // if player farkled, score will be 0, so turn score should reset to 0 and not add to player score
     const totalTurnScore =
-      (turnScore.reduce((total, s) => total + s, 0) || 0) + (score || 0);
+      score === 0
+        ? 0
+        : (turnScore.reduce((total, s) => total + s, 0) || 0) + (score || 0);
 
     // Update player 1's score
     setPlayers(
@@ -74,7 +81,7 @@ function App() {
 
     let newDice = dice.map((die) => ({ ...die }));
 
-    // Score selected dice before locking
+    // Score selected dice before locking them from further rolls
     const selectedDice = newDice.filter(
       (die) => die.isSelected && !die.isLocked,
     );
@@ -88,6 +95,7 @@ function App() {
     );
 
     // Check if all locked, reset if so
+    // Player used all dice, still alive; reset dice and continue
     if (newDice.every((die) => die.isLocked)) {
       alert("Still alive. Woo hoo!");
       newDice = newDice.map((die) => ({
@@ -108,7 +116,8 @@ function App() {
     // Check for farkle on rolled dice
     const unlockedDice = newDice.filter((die) => !die.isLocked);
     if (unlockedDice.length > 0 && checkForFarkle(unlockedDice)) {
-      alert("Farkle!");
+      alert("Farkle! Turn is over ☹️");
+      resetDice(0); // Farkle should end turn, so reset dice and turn score but don't add to player score
     }
   }
 
@@ -265,7 +274,7 @@ function App() {
             Roll Dice
           </button>
           <button
-            onClick={resetDice}
+            onClick={endTurn}
             className="bg-red-700 hover:bg-red-800 text-white font-bold py-3 px-6 rounded"
           >
             End Turn
