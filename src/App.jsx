@@ -117,6 +117,7 @@ function App() {
     const unlockedDice = newDice.filter((die) => !die.isLocked);
     if (unlockedDice.length > 0 && checkForFarkle(unlockedDice)) {
       alert("Farkle! Turn is over ☹️");
+
       resetDice(0); // Farkle should end turn, so reset dice and turn score but don't add to player score
     }
   }
