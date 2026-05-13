@@ -3,6 +3,9 @@ import Header from "./Header";
 import Scoreboard from "./Scoreboard";
 import Die from "./Die";
 import Rollboard from "./Rollboard";
+import NewGame from "./NewGame";
+
+// TODO: Keep track of currentPlayer, at turn end assign score to currentPlayer, reassign to next player
 
 function App() {
   const [dice, setDice] = useState(
@@ -15,37 +18,15 @@ function App() {
   );
   const [turnScore, setTurnScore] = useState([]);
   const [players, setPlayers] = useState([
-    { name: "player1", score: 0 },
-    { name: "player2", score: 0 },
-    { name: "player3", score: 0 },
-    { name: "player4", score: 0 },
+    { id: 1, name: "player1", score: 0 },
+    { id: 2, name: "player2", score: 0 },
+    { id: 3, name: "player3", score: 0 },
+    { id: 4, name: "player4", score: 0 },
   ]);
 
   // New game form where players enter names
   const [showForm, setShowForm] = useState(false);
-  const [newPlayerNames, setNewPlayerNames] = useState({
-    player1: "",
-    player2: "",
-    player3: "",
-    player4: "",
-  });
 
-  const handleSubmit = (event) => {
-    event.preventDefault();
-    const newPlayers = [
-      { name: newPlayerNames.player1, score: 0 },
-      { name: newPlayerNames.player2, score: 0 },
-      { name: newPlayerNames.player3, score: 0 },
-      { name: newPlayerNames.player4, score: 0 },
-    ];
-    setPlayers(newPlayers);
-    setShowForm(false);
-  };
-
-  const handleInputChange = (event) => {
-    const { name, value } = event.target;
-    setNewPlayerNames({ ...newPlayerNames, [name]: value });
-  };
   // End section about new game form
 
   function endTurn() {
@@ -307,49 +288,22 @@ function App() {
           >
             End Turn
           </button>
-          <button onClick={() => setShowForm(true)}>Show Form</button>
-          {showForm && (
-            <form onSubmit={handleSubmit}>
-              <label>Player 1 Name:</label>
-              <input
-                type="text"
-                name="player1"
-                value={newPlayerNames.player1}
-                onChange={handleInputChange}
-              />
-              <br />
-              <label>Player 2 Name:</label>
-              <input
-                type="text"
-                name="player2"
-                value={newPlayerNames.player2}
-                onChange={handleInputChange}
-              />
-              <br />
-              <label>Player 3 Name:</label>
-              <input
-                type="text"
-                name="player3"
-                value={newPlayerNames.player3}
-                onChange={handleInputChange}
-              />
-              <br />
-              <label>Player 4 Name:</label>
-              <input
-                type="text"
-                name="player4"
-                value={newPlayerNames.player4}
-                onChange={handleInputChange}
-              />
-              <br />
-              <input type="submit" value="Submit" />
-            </form>
-          )}
-          <ul>
+          <button
+            onClick={() => setShowForm(true)}
+            className="bg-blue-700 hover:bg-blue-800 text-white font-bold py-3 px-6 rounded"
+          >
+            New Game
+          </button>
+          {showForm ? (
+            <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 flex items-center justify-center border-2 rounded-lg p-2 bg-green-200">
+              <NewGame setPlayers={setPlayers} setShowForm={setShowForm} />
+            </div>
+          ) : null}
+          {/* <ul>
             {players.map((player, index) => (
               <li key={index}>{player.name}</li>
             ))}
-          </ul>
+          </ul> */}
         </div>
       </div>
     </>

@@ -15,7 +15,7 @@ function Scoreboard({ players }) {
         <tbody>
           {/* Object.entries(players) converts props object into an array of [key, value] pairs */}
           {players.map((player) => (
-            <tr key={player.name}>
+            <tr key={player.id}>
               <td className="border border-gray-300 text-gray-200 px-4 py-2">
                 {player.name}
               </td>
