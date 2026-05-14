@@ -18,16 +18,28 @@ function App() {
   );
   const [turnScore, setTurnScore] = useState([]);
   const [players, setPlayers] = useState([
-    { id: 1, name: "player1", score: 0 },
-    { id: 2, name: "player2", score: 0 },
-    { id: 3, name: "player3", score: 0 },
-    { id: 4, name: "player4", score: 0 },
+    { id: 0, name: "player1", score: 0 },
+    { id: 1, name: "player2", score: 0 },
+    { id: 2, name: "player3", score: 0 },
+    { id: 3, name: "player4", score: 0 },
   ]);
 
   // New game form where players enter names
   const [showForm, setShowForm] = useState(false);
 
-  // End section about new game form
+  // Keep track of current player
+  const [currentPlayerID, setCurrentPlayerID] = useState(0);
+  function moveToNextPlayerID() {
+    let numberPlayers = 0;
+    for (const item of players) {
+      if (item.name !== "") {
+        numberPlayers = numberPlayers + 1;
+      }
+    }
+    if (numberPlayers !== 0) {
+      setCurrentPlayerID((prev) => (prev + 1) % numberPlayers);
+    }
+  }
 
   function endTurn() {
     let score = 0;
@@ -54,6 +66,11 @@ function App() {
 
   // resets dice to initial state, adds turn score to player 1's total score, resets turn score to 0
   function resetDice(score) {
+    // CAPTURE the current player ID RIGHT NOW
+    const playerToUpdate = currentPlayerID;
+
+    console.log("current player: " + players[playerToUpdate].name);
+    console.log("currentPlayerID: " + playerToUpdate);
     // sometimes score values are NaN
     // if player farkled, score will be 0, so turn score should reset to 0 and not add to player score
     const totalTurnScore =
@@ -61,14 +78,15 @@ function App() {
         ? 0
         : (turnScore.reduce((total, s) => total + s, 0) || 0) + (score || 0);
 
-    // Update player 1's score
-    setPlayers(
-      players.map((player) =>
-        player.name === "player1"
-          ? { ...player, score: player.score + totalTurnScore }
-          : player,
-      ),
+    // Create the UPDATED players array first
+    const updatedPlayers = players.map((player) =>
+      player.id === playerToUpdate
+        ? { ...player, score: player.score + totalTurnScore }
+        : player,
     );
+
+    // Then update state with the new array
+    setPlayers(updatedPlayers);
 
     // Reset dice
     setDice(
@@ -81,7 +99,14 @@ function App() {
     );
     // Reset turn score
     setTurnScore([]);
-    console.log("Turn score reset to:", 0);
+    console.log(
+      "Updating player ID:",
+      playerToUpdate,
+      "with score:",
+      totalTurnScore,
+    );
+    console.log("Updated players:", updatedPlayers);
+    moveToNextPlayerID();
   }
 
   function rollDice() {

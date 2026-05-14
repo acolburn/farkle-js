@@ -11,10 +11,10 @@ export default function NewGame({ setPlayers, setShowForm }) {
   const handleSubmit = (event) => {
     event.preventDefault();
     const newPlayers = [
-      { id: 1, name: newPlayerNames.player1, score: 0 },
-      { id: 2, name: newPlayerNames.player2, score: 0 },
-      { id: 3, name: newPlayerNames.player3, score: 0 },
-      { id: 4, name: newPlayerNames.player4, score: 0 },
+      { id: 0, name: newPlayerNames.player1, score: 0 },
+      { id: 1, name: newPlayerNames.player2, score: 0 },
+      { id: 2, name: newPlayerNames.player3, score: 0 },
+      { id: 3, name: newPlayerNames.player4, score: 0 },
     ];
     setPlayers(newPlayers);
     setShowForm(false);
