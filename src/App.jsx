@@ -53,7 +53,9 @@ function App() {
     if (_dice.length > 0) {
       // Unlikely event player selected dice that don't score...
       if (checkForFarkle(_dice)) {
-        alert("Farkle! No points scored this turn.");
+        // alert("Farkle! Turn is over ☹️");
+        const audio = new Audio("farkle3.mp3");
+        audio.play();
         resetDice(0);
         return;
       } else {
@@ -79,14 +81,29 @@ function App() {
         : (turnScore.reduce((total, s) => total + s, 0) || 0) + (score || 0);
 
     // Create the UPDATED players array first
-    const updatedPlayers = players.map((player) =>
-      player.id === playerToUpdate
-        ? { ...player, score: player.score + totalTurnScore }
-        : player,
-    );
-
-    // Then update state with the new array
-    setPlayers(updatedPlayers);
+    // If player farkled, don't do this stuff...
+    let notFarkle = totalTurnScore > 0;
+    // Player needs >=500 to start
+    let hasMinimumHand = true;
+    if (notFarkle) {
+      players.forEach((player) => {
+        if (player.id === playerToUpdate) {
+          if (player.score === 0 && totalTurnScore < 500) {
+            alert("You need at least 500 pts to start game");
+            hasMinimumHand = false;
+          }
+        }
+      });
+      if (hasMinimumHand) {
+        const updatedPlayers = players.map((player) =>
+          player.id === playerToUpdate
+            ? { ...player, score: player.score + totalTurnScore }
+            : player,
+        );
+        // Then update state with the new array
+        setPlayers(updatedPlayers);
+      }
+    }
 
     // Reset dice
     setDice(
@@ -105,7 +122,6 @@ function App() {
       "with score:",
       totalTurnScore,
     );
-    console.log("Updated players:", updatedPlayers);
     moveToNextPlayerID();
   }
 
@@ -149,7 +165,9 @@ function App() {
     // Check for farkle on rolled dice
     const unlockedDice = newDice.filter((die) => !die.isLocked);
     if (unlockedDice.length > 0 && checkForFarkle(unlockedDice)) {
-      alert("Farkle! Turn is over ☹️");
+      // alert("Farkle! Turn is over ☹️");
+      const audio = new Audio("farkle3.mp3");
+      audio.play();
 
       resetDice(0); // Farkle should end turn, so reset dice and turn score but don't add to player score
     }
@@ -170,6 +188,7 @@ function App() {
 
   // core scoring function; returns score for a given array of die objects
   function calculateScoreValue(dice) {
+    // make an object showing number of each dice value in hand, e.g., {1:1, 2:0, 3:1, 4:2, 5:2, 6:0}
     const values = dice.map((d) => d.value);
     const counts = values.reduce((acc, val) => {
       acc[val] = (acc[val] || 0) + 1;
@@ -179,6 +198,7 @@ function App() {
     let score = 0;
     if (Object.values(counts).includes(6)) {
       return { score: 3000, type: "6 of a kind" };
+      // if there's 5 of a kind, remove the 5 from the count object to prevent double counting
     } else if (Object.values(counts).includes(5)) {
       Object.keys(counts).forEach((key) => {
         if (counts[key] === 5) {
@@ -274,7 +294,7 @@ function App() {
       <div className="flex flex-col items-center justify-start min-h-screen px-4 ">
         <div className="relative h-[80vh] w-[95%] flex flex-col bg-green-700 border-10 rounded-lg">
           <div className="absolute top-4 right-4">
-            <Scoreboard players={players} />
+            <Scoreboard players={players} currentPlayerID={currentPlayerID} />
           </div>
           <div className="absolute top-65 right-4">
             <Rollboard turnScore={turnScore} />
