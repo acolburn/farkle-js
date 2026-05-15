@@ -4,29 +4,36 @@ import Scoreboard from "./Scoreboard";
 import Die from "./Die";
 import Rollboard from "./Rollboard";
 import NewGame from "./NewGame";
+import GetStateOnline from "./GetStateOnline";
+import { doc, updateDoc } from "firebase/firestore";
+import { db } from "./firebase";
 
 function App() {
-  const [dice, setDice] = useState(
-    Array.from({ length: 6 }, (_, id) => ({
-      id,
-      value: null,
-      isLocked: false,
-      isSelected: false,
-    })),
-  );
-  const [turnScore, setTurnScore] = useState([]);
-  const [players, setPlayers] = useState([
-    { id: 0, name: "player1", score: 0 },
-    { id: 1, name: "player2", score: 0 },
-    { id: 2, name: "player3", score: 0 },
-    { id: 3, name: "player4", score: 0 },
-  ]);
+  // 1. Call your custom hook to get the real-time states
+  const gameId = "room123"; //for test purposes
+  const { dice, turnScore, players, currentPlayerID, loading } =
+    GetStateOnline(gameId);
+  // const [dice, setDice] = useState(
+  //   Array.from({ length: 6 }, (_, id) => ({
+  //     id,
+  //     value: null,
+  //     isLocked: false,
+  //     isSelected: false,
+  //   })),
+  // );
+  // const [turnScore, setTurnScore] = useState([]);
+  // const [players, setPlayers] = useState([
+  //   { id: 0, name: "player1", score: 0 },
+  //   { id: 1, name: "player2", score: 0 },
+  //   { id: 2, name: "player3", score: 0 },
+  //   { id: 3, name: "player4", score: 0 },
+  // ]);
 
   // New game form where players enter names
   const [showForm, setShowForm] = useState(false);
 
   // Keep track of current player
-  const [currentPlayerID, setCurrentPlayerID] = useState(0);
+  // const [currentPlayerID, setCurrentPlayerID] = useState(0);
   function moveToNextPlayerID() {
     let numberPlayers = 0;
     for (const item of players) {
