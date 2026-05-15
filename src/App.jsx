@@ -5,8 +5,6 @@ import Die from "./Die";
 import Rollboard from "./Rollboard";
 import NewGame from "./NewGame";
 
-// TODO: Keep track of currentPlayer, at turn end assign score to currentPlayer, reassign to next player
-
 function App() {
   const [dice, setDice] = useState(
     Array.from({ length: 6 }, (_, id) => ({
@@ -71,17 +69,15 @@ function App() {
     // CAPTURE the current player ID RIGHT NOW
     const playerToUpdate = currentPlayerID;
 
-    console.log("current player: " + players[playerToUpdate].name);
-    console.log("currentPlayerID: " + playerToUpdate);
-    // sometimes score values are NaN
-    // if player farkled, score will be 0, so turn score should reset to 0 and not add to player score
+    // guard against score being NaN with "|| 0"
+    // if player farkled, score (on roll) will be 0, so total score for turn should reset to 0
     const totalTurnScore =
       score === 0
         ? 0
         : (turnScore.reduce((total, s) => total + s, 0) || 0) + (score || 0);
 
     // Create the UPDATED players array first
-    // If player farkled, don't do this stuff...
+    // If player farkled, i.e., totalTurnScore==0, don't do this stuff...
     let notFarkle = totalTurnScore > 0;
     // Player needs >=500 to start
     let hasMinimumHand = true;
@@ -116,12 +112,6 @@ function App() {
     );
     // Reset turn score
     setTurnScore([]);
-    console.log(
-      "Updating player ID:",
-      playerToUpdate,
-      "with score:",
-      totalTurnScore,
-    );
     moveToNextPlayerID();
   }
 
