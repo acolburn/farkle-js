@@ -5,7 +5,7 @@ import Die from "./Die";
 import Rollboard from "./Rollboard";
 import NewGame from "./NewGame";
 import GetStateOnline from "./GetStateOnline";
-import { doc, updateDoc } from "firebase/firestore";
+import { doc, updateDoc} from "firebase/firestore";
 import { db } from "./firebase";
 
 function App() {
@@ -13,6 +13,7 @@ function App() {
   const gameId = "room123"; //for test purposes
   const { dice, turnScore, players, currentPlayerID, loading } =
     GetStateOnline(gameId);
+
   // const [dice, setDice] = useState(
   //   Array.from({ length: 6 }, (_, id) => ({
   //     id,
@@ -21,7 +22,7 @@ function App() {
   //     isSelected: false,
   //   })),
   // );
-  // const [turnScore, setTurnScore] = useState([]);
+  // const [turnScore, setTurnScore] = useState(0);
   // const [players, setPlayers] = useState([
   //   { id: 0, name: "player1", score: 0 },
   //   { id: 1, name: "player2", score: 0 },
@@ -34,95 +35,113 @@ function App() {
 
   // Keep track of current player
   // const [currentPlayerID, setCurrentPlayerID] = useState(0);
-  function moveToNextPlayerID() {
-    let numberPlayers = 0;
-    for (const item of players) {
-      if (item.name !== "") {
-        numberPlayers = numberPlayers + 1;
-      }
-    }
-    if (numberPlayers !== 0) {
-      setCurrentPlayerID((prev) => (prev + 1) % numberPlayers);
-    }
-  }
+  // async function moveToNextPlayerID() {
+  //   let numberPlayers = 0;
+  //   for (const item of players) {
+  //     if (item.name !== "") {
+  //       numberPlayers = numberPlayers + 1;
+  //     }
+  //   }
+  //   if (numberPlayers !== 0) {
+  //     // setCurrentPlayerID((prev) => (prev + 1) % numberPlayers);
+  //     const _currentPlayerID = (currentPlayerID + 1) % numberPlayers;
+  //     const gameRef = doc(db, "games", gameId);
+  //     await updateDoc(gameRef, {
+  //       currentPlayerID: _currentPlayerID,
+  //     });
+  //   }
+  // }
 
   function endTurn() {
-    let score = 0;
-    if (!dice || dice.length === 0) return;
+  let rollScore = 0;
+  if (!dice || dice.length === 0) return;
 
-    // Die objects that are selected and unlocked should be scored
-    // const _dice = dice.filter((die) => die.isSelected && !die.isLocked);
-    // Die objects that are selected should be scored (locked dice can't included, so previous code was redundant)
-    const _dice = dice.filter((die) => die.isSelected);
+  const selectedDice = dice.filter((die) => die.isSelected);
 
-    if (_dice.length > 0) {
-      // Unlikely event player selected dice that don't score...
-      if (checkForFarkle(_dice)) {
-        // alert("Farkle! Turn is over ☹️");
-        const audio = new Audio("farkle3.mp3");
-        audio.play();
-        resetDice(0);
-        return;
-      } else {
-        score = calculateScore(_dice);
-        console.log("Value of selected dice when you clicked End Turn:", score);
-      }
+  if (selectedDice.length > 0) {
+    if (checkForFarkle(selectedDice)) {
+      const audio = new Audio("farkle3.mp3");
+      audio.play();
+      resetDice(0, true); // True = Did Farkle
+      return;
+    } else {
+      // Calculate any final unbanked dice selected on the board
+      const { score } = calculateScoreValue(selectedDice);
+      rollScore = score;
     }
-    resetDice(score);
   }
+  
+  resetDice(rollScore, false); // False = Voluntarily ended turn, keep points!
+}
 
-  // resets dice to initial state, adds turn score to player 1's total score, resets turn score to 0
-  function resetDice(score) {
-    // CAPTURE the current player ID RIGHT NOW
-    const playerToUpdate = currentPlayerID;
+ async function resetDice(rollScore, didFarkle) {
+  const playerToUpdate = currentPlayerID;
 
-    // guard against score being NaN with "|| 0"
-    // if player farkled, score (on roll) will be 0, so total score for turn should reset to 0
-    const totalTurnScore =
-      score === 0
-        ? 0
-        : (turnScore.reduce((total, s) => total + s, 0) || 0) + (score || 0);
+  // If they farkled, turn score is wiped out. 
+  // Otherwise, they get their accumulated turn score plus any final table dice.
+  const totalTurnScore = didFarkle ? 0 : turnScore + rollScore;
 
-    // Create the UPDATED players array first
-    // If player farkled, i.e., totalTurnScore==0, don't do this stuff...
-    let notFarkle = totalTurnScore > 0;
-    // Player needs >=500 to start
-    let hasMinimumHand = true;
-    if (notFarkle) {
-      players.forEach((player) => {
-        if (player.id === playerToUpdate) {
-          if (player.score === 0 && totalTurnScore < 500) {
-            alert("You need at least 500 pts to start game");
-            hasMinimumHand = false;
-          }
+  // They are allowed to score if they didn't farkle AND they actually accumulated points
+  let canBankPoints = !didFarkle && totalTurnScore > 0;
+  let hasMinimumHand = true;
+  let updatedPlayers = [...players];
+
+  if (canBankPoints) {
+    // Check for the 500-point initial minimum game rule
+    for (const player of players) {
+      if (player.id === playerToUpdate) {
+        if (player.score === 0 && totalTurnScore < 500) {
+          alert("You need at least 500 pts to start game");
+          hasMinimumHand = false;
         }
-      });
-      if (hasMinimumHand) {
-        const updatedPlayers = players.map((player) =>
-          player.id === playerToUpdate
-            ? { ...player, score: player.score + totalTurnScore }
-            : player,
-        );
-        // Then update state with the new array
-        setPlayers(updatedPlayers);
       }
     }
 
-    // Reset dice
-    setDice(
-      dice.map((die) => ({
-        ...die,
-        value: null,
-        isLocked: false,
-        isSelected: false,
-      })),
+    if (!hasMinimumHand) {
+      // Exit out and let them roll again or fix their selection
+      return; 
+    }
+
+    // Accumulate points safely into the array
+    updatedPlayers = players.map((player) =>
+      player.id === playerToUpdate
+        ? { ...player, score: player.score + totalTurnScore }
+        : player,
     );
-    // Reset turn score
-    setTurnScore([]);
-    moveToNextPlayerID();
   }
 
-  function rollDice() {
+  // Prepare clean dice array
+  const _dice = dice.map((die) => ({
+    ...die,
+    value: null,
+    isLocked: false,
+    isSelected: false,
+  }));
+
+  // Calculate the next player ID locally
+  let numberPlayers = 0;
+  for (const item of players) {
+    if (item.name !== "") {
+      numberPlayers = numberPlayers + 1;
+    }
+  }
+  
+  let nextPlayerID = currentPlayerID;
+  if (numberPlayers !== 0) {
+    nextPlayerID = (currentPlayerID + 1) % numberPlayers;
+  }
+
+  // Push the singular atomic update packet to Firestore
+  const gameRef = doc(db, "games", gameId);
+  await updateDoc(gameRef, {
+    players: updatedPlayers,
+    dice: _dice,
+    turnScore: 0,
+    currentPlayerID: nextPlayerID,
+  });
+}
+
+  async function rollDice() {
     if (!dice || dice.length === 0) return;
 
     let newDice = dice.map((die) => ({ ...die }));
@@ -132,7 +151,7 @@ function App() {
       (die) => die.isSelected && !die.isLocked,
     );
     if (selectedDice.length > 0) {
-      calculateScore(selectedDice);
+      await calculateScore(selectedDice);
     }
 
     // Lock selected dice
@@ -157,7 +176,11 @@ function App() {
       die.isLocked ? die : { ...die, value: Math.floor(Math.random() * 6) + 1 },
     );
 
-    setDice(newDice);
+    // setDice(newDice);
+    const gameRef = doc(db, "games", gameId);
+    await updateDoc(gameRef, {
+      dice: newDice,
+    });
 
     // Check for farkle on rolled dice
     const unlockedDice = newDice.filter((die) => !die.isLocked);
@@ -166,7 +189,7 @@ function App() {
       const audio = new Audio("farkle3.mp3");
       audio.play();
 
-      resetDice(0); // Farkle should end turn, so reset dice and turn score but don't add to player score
+      resetDice(0, true); // Farkle should end turn, so reset dice and turn score but don't add to player score
     }
   }
 
@@ -260,31 +283,35 @@ function App() {
   // Wrapper function to calculate score and update turnScore state;
   // also logs the new turn score total after scoring
   // score result + state update + console.logs
-  function calculateScore(dice) {
-    const { score, type } = calculateScoreValue(dice);
+  async function calculateScore(dice) {
+    const { score: rollScore} = calculateScoreValue(dice);
 
-    if (score > 0) {
-      setTurnScore((prev) => [...prev, score]);
-      let t = turnScore.reduce((total, s) => total + s, 0);
-      t += score;
-      if (type === "6 of a kind") {
-        console.log("Turn score total after 6 of a kind:", t);
-      } else if (type === "4 of a kind + pair") {
-        console.log("Turn score total after 4 of a kind + pair:", t);
-      } else if (type === "straight") {
-        console.log("Turn score total after straight:", t);
-      } else if (type === "two triplets") {
-        console.log("Turn score total after two triplets:", t);
-      } else if (type === "three pairs") {
-        console.log("Turn score total after three pairs:", t);
-      } else if (type === "partial score") {
-        console.log("Turn score total after scoring:", t);
-      }
+    if (rollScore > 0) {
+      const newTurnScore = turnScore + rollScore
+      const gameRef = doc(db, "games", gameId);
+      await updateDoc(gameRef, {
+        turnScore: newTurnScore
+      });
+      return newTurnScore;
+      // if (type === "6 of a kind") {
+      //   console.log("Turn score total after 6 of a kind:", turnScore);
+      // } else if (type === "4 of a kind + pair") {
+      //   console.log("Turn score total after 4 of a kind + pair:", turnScore);
+      // } else if (type === "straight") {
+      //   console.log("Turn score total after straight:", turnScore);
+      // } else if (type === "two triplets") {
+      //   console.log("Turn score total after two triplets:", turnScore);
+      // } else if (type === "three pairs") {
+      //   console.log("Turn score total after three pairs:", turnScore);
+      // } else if (type === "partial score") {
+      //   console.log("Turn score total after scoring:", turnScore);
+      // }
     }
-    return score;
   }
 
   // ----- begin definition of what App component renders to the screen -----
+  if (loading) return <p>Loading game room...</p>;
+
   return (
     <>
       <Header />
@@ -304,13 +331,20 @@ function App() {
                 value={die.value || die.id + 1} // default to [1,2,3,4,5,6]
                 isLocked={die.isLocked}
                 isSelected={die.isSelected}
-                onSelect={() => {
+                onSelect={async () => {
                   // toggle isSelected for this die
-                  setDice((prevDice) =>
-                    prevDice.map((d) =>
-                      d.id === die.id ? { ...d, isSelected: !d.isSelected } : d,
-                    ),
+                  // setDice((prevDice) =>
+                  //   prevDice.map((d) =>
+                  //     d.id === die.id ? { ...d, isSelected: !d.isSelected } : d,
+                  //   ),
+                  // );
+                  const _dice = dice.map((d) =>
+                    d.id === die.id ? { ...d, isSelected: !d.isSelected } : d,
                   );
+                  const gameRef = doc(db, "games", gameId);
+                  await updateDoc(gameRef, {
+                    dice: _dice,
+                  });
                 }}
               />
             ))}
@@ -338,7 +372,8 @@ function App() {
           </button>
           {showForm ? (
             <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 flex items-center justify-center border-2 rounded-lg p-2 bg-green-200">
-              <NewGame setPlayers={setPlayers} setShowForm={setShowForm} />
+              {/* <NewGame setPlayers={setPlayers} setShowForm={setShowForm} /> */}
+              <NewGame setShowForm={setShowForm} gameId={gameId} />
             </div>
           ) : null}
           {/* <ul>

@@ -1,6 +1,8 @@
 import { useState } from "react";
+import { doc, updateDoc } from "firebase/firestore";
+import { db } from "./firebase";
 
-export default function NewGame({ setPlayers, setShowForm }) {
+export default function NewGame({ setShowForm, gameId }) {
   const [newPlayerNames, setNewPlayerNames] = useState({
     player1: "",
     player2: "",
@@ -8,7 +10,7 @@ export default function NewGame({ setPlayers, setShowForm }) {
     player4: "",
   });
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
     const newPlayers = [
       { id: 0, name: newPlayerNames.player1, score: 0 },
@@ -16,7 +18,20 @@ export default function NewGame({ setPlayers, setShowForm }) {
       { id: 2, name: newPlayerNames.player3, score: 0 },
       { id: 3, name: newPlayerNames.player4, score: 0 },
     ];
-    setPlayers(newPlayers);
+    // setPlayers(newPlayers);
+    const newDice = Array.from({ length: 6 }, (_, id) => ({
+      id,
+      value: null,
+      isLocked: false,
+      isSelected: false,
+    }))
+    const gameRef = doc(db, "games", gameId);
+    await updateDoc(gameRef, {
+      players: newPlayers,
+      turnScore: 0,
+      currentPlayerID: 0,
+      dice: newDice,
+    });
     setShowForm(false);
   };
 
