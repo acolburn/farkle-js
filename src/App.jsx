@@ -14,43 +14,10 @@ function App() {
   const { dice, turnScore, players, currentPlayerID, loading } =
     GetStateOnline(gameId);
 
-  // const [dice, setDice] = useState(
-  //   Array.from({ length: 6 }, (_, id) => ({
-  //     id,
-  //     value: null,
-  //     isLocked: false,
-  //     isSelected: false,
-  //   })),
-  // );
-  // const [turnScore, setTurnScore] = useState(0);
-  // const [players, setPlayers] = useState([
-  //   { id: 0, name: "player1", score: 0 },
-  //   { id: 1, name: "player2", score: 0 },
-  //   { id: 2, name: "player3", score: 0 },
-  //   { id: 3, name: "player4", score: 0 },
-  // ]);
 
   // New game form where players enter names
   const [showForm, setShowForm] = useState(false);
 
-  // Keep track of current player
-  // const [currentPlayerID, setCurrentPlayerID] = useState(0);
-  // async function moveToNextPlayerID() {
-  //   let numberPlayers = 0;
-  //   for (const item of players) {
-  //     if (item.name !== "") {
-  //       numberPlayers = numberPlayers + 1;
-  //     }
-  //   }
-  //   if (numberPlayers !== 0) {
-  //     // setCurrentPlayerID((prev) => (prev + 1) % numberPlayers);
-  //     const _currentPlayerID = (currentPlayerID + 1) % numberPlayers;
-  //     const gameRef = doc(db, "games", gameId);
-  //     await updateDoc(gameRef, {
-  //       currentPlayerID: _currentPlayerID,
-  //     });
-  //   }
-  // }
 
   function endTurn() {
   let rollScore = 0;
@@ -293,19 +260,6 @@ function App() {
         turnScore: newTurnScore
       });
       return newTurnScore;
-      // if (type === "6 of a kind") {
-      //   console.log("Turn score total after 6 of a kind:", turnScore);
-      // } else if (type === "4 of a kind + pair") {
-      //   console.log("Turn score total after 4 of a kind + pair:", turnScore);
-      // } else if (type === "straight") {
-      //   console.log("Turn score total after straight:", turnScore);
-      // } else if (type === "two triplets") {
-      //   console.log("Turn score total after two triplets:", turnScore);
-      // } else if (type === "three pairs") {
-      //   console.log("Turn score total after three pairs:", turnScore);
-      // } else if (type === "partial score") {
-      //   console.log("Turn score total after scoring:", turnScore);
-      // }
     }
   }
 
@@ -332,12 +286,6 @@ function App() {
                 isLocked={die.isLocked}
                 isSelected={die.isSelected}
                 onSelect={async () => {
-                  // toggle isSelected for this die
-                  // setDice((prevDice) =>
-                  //   prevDice.map((d) =>
-                  //     d.id === die.id ? { ...d, isSelected: !d.isSelected } : d,
-                  //   ),
-                  // );
                   const _dice = dice.map((d) =>
                     d.id === die.id ? { ...d, isSelected: !d.isSelected } : d,
                   );
@@ -372,15 +320,9 @@ function App() {
           </button>
           {showForm ? (
             <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 flex items-center justify-center border-2 rounded-lg p-2 bg-green-200">
-              {/* <NewGame setPlayers={setPlayers} setShowForm={setShowForm} /> */}
               <NewGame setShowForm={setShowForm} gameId={gameId} />
             </div>
           ) : null}
-          {/* <ul>
-            {players.map((player, index) => (
-              <li key={index}>{player.name}</li>
-            ))}
-          </ul> */}
         </div>
       </div>
     </>
