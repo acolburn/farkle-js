@@ -14,10 +14,10 @@ function Scoreboard({ players, currentPlayerID }) {
         <tbody>
           {playersArray.map((player) => (
             <tr key={player.id}>
-              <td className={`border border-gray-300 text-gray-200 px-4 py-2 ${player.id === currentPlayerID ? "font-bold" : ""}`}>
+              <td className={`border border-gray-300 text-gray-200 px-4 py-2 ${player.id === currentPlayerID ? "font-black" : ""} ${player.id === currentPlayerID ? "text-yellow-500" : ""}`}>
                 {player.name}
               </td>
-              <td className="border border-gray-300 text-gray-200 px-4 py-2">
+              <td className={`border border-gray-300 text-gray-200 px-4 py-2 ${player.id === currentPlayerID ? "font-black" : ""} ${player.id === currentPlayerID ? "text-yellow-500" : ""}`}>
                 {player.score}
               </td>
             </tr>
